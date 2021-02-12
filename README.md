@@ -18,8 +18,10 @@ https://carla-releases.s3.eu-west-3.amazonaws.com/Windows/CARLA_0.9.11.zip
    4.2. >> conda create -n venv python=3.7<br>
    4.3. >> conda activate venv<br>
    4.4. >> pip install -r PythonAPI/XAI-CARLA-dataset-master/requirements.txt<br>
+   
+5. To open CARLA, cmd: >> CarlaUE4.exe -quality-level=Low -carla-rpc-port=2000
  
-5. Run: >> python start.py
+6. From conda venv, run: >> python start.py
 
 If the script runs, your CARLA environment is ready. 
 

@@ -1,10 +1,11 @@
 # XAI-CARLA-dataset
 The purpose of this repository is for automated creation of dataset of various scenarios in CARLA towards explainability in Reinforcement Learning in AVs.
 
-Tested with:<br>
+#### Tested with:<br>
 Python: 3.7<br>
 CARLA: 0.9.11
 
+### Follow these steps to set up the env:
 1. Get the latest release of v0.9.11 from the following link (preferable over cloning the master repo since new changes might break your environment (source:devs)): 
 https://carla-releases.s3.eu-west-3.amazonaws.com/Windows/CARLA_0.9.11.zip
 
@@ -21,3 +22,7 @@ https://carla-releases.s3.eu-west-3.amazonaws.com/Windows/CARLA_0.9.11.zip
 5. python start.py
 
 If the script runs, your CARLA environment is ready. 
+
+### To-do:
+- [ ] Add the MobileSSD object-detection module
+- [ ] Integrate 'scenic' for scenario creation

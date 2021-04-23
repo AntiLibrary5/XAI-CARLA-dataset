@@ -60,14 +60,16 @@ weather = carla.WeatherParameters(
     sun_altitude_angle=30.0)
 world.set_weather(weather)
 
-IM_WIDTH = 64
-IM_HEIGHT = 64
+IM_WIDTH = 512
+IM_HEIGHT = 512
 
 font = cv2.FONT_HERSHEY_SIMPLEX
 bottomLeftCornerOfText = (50,250)
 fontScale = 0.5
 fontColor = (255,255,255)
 lineType = 2
+
+cc = carla.ColorConverter.CityScapesPalette
 
 #class adapted from PythonAPI/examples/synchronous_mode.py
 #best implementation eeded to sunchronize the output different sensors
@@ -124,14 +126,29 @@ class CarlaSyncMode(object):
 
 #function to display the camera view and vehicle control on
 #a CV window
-def process_img(image, text):
-    #image.save_to_disk("input_image\im.jpg")
-    i = np.frombuffer(image.raw_data, dtype=np.dtype("uint8"))
-    i2 = i.reshape((IM_WIDTH, IM_HEIGHT, 4))
-    cv2.putText(i2, text, bottomLeftCornerOfText, font, fontScale, (255, 255, 255), lineType, cv2.LINE_AA)
-    cv2.imshow("", i2)
-    cv2.waitKey(1)
-    return i2/255.0
+def process_img(im_rgb, im_ss, text, actors_present, frame, SAVE_FLAG, DISP_FLAG):
+    if SAVE_FLAG == 1:
+        #for bounding boxes
+        debug = world.debug
+        for actor in actors_present:
+            debug.draw_box(box=carla.BoundingBox(actor.get_transform().location, actor.bounding_box.extent),
+                rotation=actor.get_transform().rotation, thickness=0.1, color=carla.Color(255, 0, 0, 0), life_time=0.1)
+        im_rgb.save_to_disk("data\{}_rgb.jpg".format(frame))
+        im_ss.save_to_disk("data\{}_semseg.jpg".format(frame))
+
+    if DISP_FLAG == 1:
+        i = np.frombuffer(im_rgb.raw_data, dtype=np.dtype("uint8"))
+        i2 = im_rgb.reshape((IM_WIDTH, IM_HEIGHT, 4))
+        cv2.putText(i2, text, bottomLeftCornerOfText, font, fontScale, (255, 255, 255), lineType, cv2.LINE_AA)
+        #for bounding boxes
+        debug = world.debug
+        for actor in actors_present:
+            debug.draw_box(box=carla.BoundingBox(actor.get_transform().location, actor.bounding_box.extent),
+                rotation=actor.get_transform().rotation, thickness=0.1, color=carla.Color(255, 0, 0, 0), life_time=0.1)
+        cv2.imshow("", i2)
+        cv2.waitKey(1)
+    return
+#i2/255.0
 
 #maintain spawning of multiple vehicles
 class SpawnCar(object):
@@ -210,6 +227,31 @@ def wait(world, frames=100, queue = None, slist = None):
                 print("Some of the sensor information is missed")
 
 def main():
+    argparser = argparse.ArgumentParser(
+        description=__doc__)
+    argparser.add_argument(
+        '-s', '--save-im',
+        metavar='S',
+        default=0,
+        type=int,
+        help='save images, int-type: {0, 1} (default: 0)')
+    argparser.add_argument(
+        '-d', '--display-cv',
+        metavar='D',
+        default=0,
+        type=int,
+        help='Display camera view, int-type: {0, 1} (default: 0)')
+    argparser.add_argument(
+        '-f', '--save-full-pixels',
+        metavar='F',
+        default=0,
+        type=int,
+        help='Save full pixel values, int-type: {0, 1} (default: 0)')
+    args = argparser.parse_args()
+
+    SAVE_FLAG = args.save_im
+    DISP_FLAG = args.display_cv
+
     print('Initializing...')
     # maintain a list of actors
     actor_list = []
@@ -265,11 +307,14 @@ def main():
         wait(world, 30)
         print('Spawned.')
         print('Simulation started...')
+
         # Create a synchronous mode context.
         with CarlaSyncMode(world, camera_rgb, camera_semseg, lidar, fps=30) as sync_mode:
             while True:
                 # Advance the simulation and wait for the data.
                 snapshot, image_rgb, image_semseg, lidar_data = sync_mode.tick(timeout=10.0)
+
+                image_semseg.convert(cc)
 
                 fps = round(1.0 / snapshot.timestamp.delta_seconds)
 
@@ -304,25 +349,17 @@ def main():
                 #get the Actor.List object for the object IDs in FOV of the lidar
                 actors_present = world.get_actors(obj_idx)
 
-                im_pixels = np.frombuffer(image_rgb.raw_data, dtype=np.dtype("uint8"))#np.array(image_rgb.raw_data)
+                image_rgb_pixels = np.frombuffer(image_rgb.raw_data, dtype=np.dtype("uint8"))#np.array(image_rgb.raw_data)
 
                 world_snapshot = world.get_snapshot()
-                c = world_snapshot.timestamp.frame
+                frame_no = world_snapshot.timestamp.frame
 
-                if c%10 == 0:
-                    current_frame = {'image': im_pixels, 'vel': vehVelocity, 'steer_pos': vehSteering,
+                if frame_no%100 == 0:
+                    current_frame = {'image_name': frame_no, 'image_data': image_rgb_pixels, 'vel': vehVelocity, 'steer_pos': vehSteering,
                      'throttle_pos': vehThrottle, 'objects': actors_present}
                     frame_list.append(current_frame)
-
-                #CV window for camera view
-                #process_img(image_rgb, text)
-
-                #for bounding boxes (need some work)
-                """debug = world.debug
-                for actor in actors_present:
-                    #actual_actor = world.get_actor(actor)
-                    debug.draw_box(carla.BoundingBox(actor.get_transform().location, carla.Vector3D(0.5, 0.5, 2)),
-                        actor.get_transform().rotation, 0.05, carla.Color(255, 0, 0, 0), 0)"""
+                    #CV window for camera view
+                    process_img(image_rgb, image_semseg, text, actors_present, frame_no, SAVE_FLAG, DISP_FLAG)
 
     finally:
         #destroy sensors
@@ -335,11 +372,12 @@ def main():
         print('Done.')
         print('Creating CSV...')
         #create df from frames list
-        df_explain = pd.DataFrame(frame_list, columns=['image', 'vel', 'steer_pos', 'throttle_pos', 'objects'])
+        df_explain = pd.DataFrame(frame_list, columns=['image_name', 'image_data', 'vel', 'steer_pos', 'throttle_pos', 'objects'])
         #to avoid truncation of image-pixel array in CSV
-        #np.set_printoptions(threshold=sys.maxsize)
+        if args.save_full_pixels == 1:
+            np.set_printoptions(threshold=sys.maxsize)
         #save df as csv
-        df_explain.to_csv('data/explain.csv',sep=',')
+        df_explain.to_csv('data/explain.csv')
         print('Done.')
         print('Goodbye.')
 

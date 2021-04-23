@@ -35,11 +35,30 @@ Using the lidar cloud points to detect the objects in the current FOV of the veh
 Currently, the vehicle is spawaned at a random point in the map and managed by the 'auto-pilot' feature of the Traffic Manager (TM). Around 15 other vehicles are also spawned in 
 the simulation.
 
+### UPDATE:
+Can now use 'scenic' to easily create complex traffic scenarios. Follow the link to setup scenic:<br>
+https://scenic-lang.readthedocs.io/en/latest/simulators.html#carla
+<br>
+'scenic' requires python 3.8. And the built version that can be downloaded from CARLA repo are natively for python 3.7. Thus you would need the .egg file for v3.8. Download the file from:<br>
+https://github.com/carla-simulator/carla/issues/3917
+<br>
+and then: easy_install PythonAPI/carla/dist/carla-0.9.11-py3.8-win-amd64.egg
+<br>
+
+Once having scenic setup, can use scenario.py as following
+##### STEP 1: run CARLA
+CarlaUE4.exe -quality-level=Low -carla-rpc-port=2000
+
+##### STEP 2: run a scenario in scenic and save the simulation log
+scenic [relative-path-from-venv]\Scenic-master\examples\carla\Carla_Challenge\carlaChallenge3_dynamic.scenic --simulate --model scenic.simulators.carla.model --time 200 --param record [absolute-path-to-CARLA]\CARLA_0.9.11\WindowsNoEditor\PythonAPI\XAI-CARLA-dataset\log\
+
+##### STEP 3: run the parser which converts the log file into text and then gets the vehicle state and objects in each frame
+python scenario.py -f [absolute-path-to-CARLA]\CARLA_0.9.11\WindowsNoEditor\PythonAPI\XAI-CARLA-dataset\log\scenario1.log -a -s parsed\scenario1_replay.txt
+
 ### To-do:
 - [ ] Add the MobileSSD object-detection module
-- [ ] Integrate 'scenic' for scenario creation
+- [+] Integrate 'scenic' for scenario creation
 - [ ] Visualize the vehicles in FOV and create bounding boxes around the objects (tentative, not needed but good for visualization)
-- [ ] Create specific custom scenarios using 'scenic'
+- [+] Create specific custom scenarios using 'scenic'
 - [ ] Implement a RL agent
-- [ ] Analyze control input of the RL agent vs the TM's 'auto-pilot' for a specific scenario
-- [ ] Implement Grad-CAM to see which features in the scene were given importance in the camera image input
+

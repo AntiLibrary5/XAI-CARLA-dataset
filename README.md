@@ -57,8 +57,8 @@ python scenario.py -f [absolute-path-to-CARLA]\CARLA_0.9.11\WindowsNoEditor\Pyth
 
 ### To-do:
 - [ ] Add the MobileSSD object-detection module
-- [+] Integrate 'scenic' for scenario creation
+- [X] Integrate 'scenic' for scenario creation
 - [ ] Visualize the vehicles in FOV and create bounding boxes around the objects (tentative, not needed but good for visualization)
-- [+] Create specific custom scenarios using 'scenic'
+- [X] Create specific custom scenarios using 'scenic'
 - [ ] Implement a RL agent
 

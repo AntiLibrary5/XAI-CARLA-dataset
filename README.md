@@ -23,7 +23,7 @@ https://carla-releases.s3.eu-west-3.amazonaws.com/Windows/CARLA_0.9.11.zip
 
 If the script runs, your CARLA environment is ready. 
 
-### csv.py:
+### dataset.py:
 Using the lidar cloud points to detect the objects in the current FOV of the vehicle, the script serves the folowing purpose:
    1. At every 1 second of simulation time:
          - record the image pixels from camera-sensor
